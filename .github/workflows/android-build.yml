@@ -20,7 +20,7 @@ jobs:
         run: |
           set -e
 
-          echo "Extracting ReadStep starter project..."
+          echo "Extracting ReadStep project..."
 
           rm -rf extracted
           mkdir -p extracted
@@ -43,11 +43,17 @@ jobs:
 
           cp -R "$PROJECT_DIR"/. .
 
-          echo "Project root:"
+          echo "Checking project files..."
+
           ls -la
 
           if [ ! -d "app" ]; then
             echo "ERROR: app directory was not found."
+            exit 1
+          fi
+
+          if [ ! -f "build.gradle.kts" ] && [ ! -f "build.gradle" ]; then
+            echo "ERROR: Gradle build file was not found."
             exit 1
           fi
 
@@ -57,10 +63,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Gradle 8.6
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.6'
+          gradle-version: '8.9.2'
 
       - name: Check Gradle
         run: |
@@ -69,7 +75,7 @@ jobs:
       - name: Generate Gradle Wrapper
         run: |
           gradle wrapper \
-            --gradle-version 8.6 \
+            --gradle-version 8.9.2 \
             --distribution-type bin
 
       - name: Make Gradle Wrapper executable
@@ -78,16 +84,19 @@ jobs:
 
       - name: Build Debug APK
         run: |
-          ./gradlew assembleDebug --stacktrace --no-daemon
+          ./gradlew assembleDebug \
+            --stacktrace \
+            --no-daemon
 
       - name: Find APK
         run: |
           echo "Searching for APK..."
-          find app/build/outputs -type f -name "*.apk" -print
+          find . -type f -name "*.apk" -print
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: ReadStep-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
