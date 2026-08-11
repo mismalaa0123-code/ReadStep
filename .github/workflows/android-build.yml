@@ -1,4 +1,4 @@
-.github/workflows/android-build.ymlname: Build ReadStep APK
+name: Build ReadStep APK
 
 on:
   workflow_dispatch:
@@ -20,9 +20,7 @@ jobs:
         run: |
           set -e
 
-          echo "========================================"
-          echo "Extracting ReadStep project"
-          echo "========================================"
+          echo "Extracting ReadStep project..."
 
           rm -rf extracted
           mkdir -p extracted
@@ -42,17 +40,16 @@ jobs:
 
           if [ -z "$PROJECT_DIR" ]; then
             echo "ERROR: Android project was not found!"
-            echo "Contents of extracted folder:"
-            find extracted -maxdepth 3 -type f -print
+            find extracted -maxdepth 4 -type f -print
             exit 1
           fi
 
-          echo "Android project found at:"
+          echo "Android project found:"
           echo "$PROJECT_DIR"
 
           cp -R "$PROJECT_DIR"/. .
 
-          echo "Checking Android project..."
+          echo "Checking project..."
 
           if [ ! -d "app" ]; then
             echo "ERROR: app directory was not found!"
@@ -71,28 +68,23 @@ jobs:
 
           echo "Android project is ready."
 
-          echo "Project files:"
-          ls -la
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
       - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
+          gradle-version: "8.9"
 
       - name: Check Gradle
         run: |
-          echo "Checking Gradle installation..."
           gradle --version
 
       - name: Generate Gradle Wrapper
         run: |
-          echo "Generating Gradle Wrapper..."
           gradle wrapper \
             --gradle-version 8.9 \
             --distribution-type bin
@@ -103,34 +95,27 @@ jobs:
 
       - name: Verify Gradle Wrapper
         run: |
-          echo "Checking Gradle Wrapper..."
           ./gradlew --version
 
       - name: Build Debug APK
         run: |
-          echo "========================================"
-          echo "Building ReadStep Debug APK"
-          echo "========================================"
-
           ./gradlew assembleDebug \
             --stacktrace \
             --no-daemon
 
-      - name: Find APK
+      - name: Check APK
         shell: bash
         run: |
-          echo "========================================"
-          echo "Searching for APK"
-          echo "========================================"
+          echo "Searching for APK..."
 
           find . -type f -name "*.apk" -print
 
-          if ! find app/build/outputs/apk -type f -name "*.apk" | grep -q .; then
+          if ! find app/build/outputs/apk/debug -type f -name "*.apk" | grep -q .; then
             echo "ERROR: APK was not generated!"
             exit 1
           fi
 
-          echo "APK successfully generated."
+          echo "APK generated successfully."
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
